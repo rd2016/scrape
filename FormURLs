@@ -1,0 +1,69 @@
+# -*- coding: utf-8 -*-
+#!/usr/local/bin/python3
+
+import xlsxwriter
+import re
+from datetime import datetime
+
+
+# -----------------------------------------------------------------------------
+# -- Functional configuration
+CITY = "Edison"
+# Food Choices
+CFLTS = ["Thai Food", "Chinese Food", "Fast Food", "Indian Food", "icecream"]
+# -----------------------------------------------------------------------------
+
+def mylog(msg):
+    ''' Personalized print() tool, used for dummy logging '''
+    print("-- " + msg)
+
+def page_to_index(page_num):
+    ''' Transforms page number into start index to be written in Yelp URL '''
+    return (page_num - 1)*10
+
+def build_arglist(elts):
+    ''' Return a Yelp url-friendly string created from a Python list'''
+    res = "["
+    for elt in elts[:-1]:
+        res += elt + ","
+    res += elts[-1] + "]"
+    return res
+
+def build_yelp_url(page, c):
+    ''' Builds Yelp URL for the given page and cflt to be parsed according to
+    config variables '''
+    url = "http://www.yelp.com/search?&start={0}".format(page_to_index(page))
+    if CITY:
+        url += "&find_loc={0}".format(CITY)
+    url += "&find_desc={0}".format(c) # We assume that CFLTS list is not empty
+    return url
+
+# Init workbook/worksheet
+
+# current time
+now=str(datetime.now())
+#strip special chars
+striped=re.sub('[^0-9]+','',now)
+
+filename = "yelpscrap-"+striped+".xlsx"
+workbook = xlsxwriter.Workbook(filename)
+worksheet = workbook.add_worksheet()
+
+row = 0; col = 0
+worksheet.write(row, col, "Shops List")
+
+# -- Headers
+row = 1; col = 0
+heads = ("Shop name", "Address", "ZipCode", "District", "Phone", "Categories")
+for head in heads:
+    worksheet.write(row, col, head)
+    col += 1
+workbook.close()
+mylog("Log started")
+for cflt in CFLTS:
+    cur_page = 0
+    while cur_page <10: 
+        cur_page += 1
+        cur_url = build_yelp_url(page=cur_page, c=cflt)
+        mylog("Start scraping page {0} at {1}".format(cur_page, cur_url))
+mylog("Log Ended")
